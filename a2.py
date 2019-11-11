@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from numpy import array, arange
+from numpy import array, arange,log
 
 '''
 NOTE: You are not allowed to import any function from numpy's linear 
@@ -38,20 +38,28 @@ def spaces_and_tabs():
 
 def problem_3_2_5():
     '''
-    We will solve problem 3.2.5 in the textbook.
-    Arrays 'year' and 'ppm' contain the annual atmospheric CO2 concentration
-    in parts per million in Antarctica.
-    Task: This function must return the average increase in ppm per year,
-          obtained by fitting a straight line to the data.
-    Test: Function 'test_problem' in 'tests/test_problem_3_2_5.py'
-    Hint: Fitting is meant in the least-square sense.
-    '''
-
+        We will solve problem 3.2.5 in the textbook.
+        Arrays 'year' and 'ppm' contain the annual atmospheric CO2 concentration
+        in parts per million in Antarctica.
+        Task: This function must return the average increase in ppm per year,
+        obtained by fitting a straight line to the data.
+        Test: Function 'test_problem' in 'tests/test_problem_3_2_5.py'
+        Hint: Fitting is meant in the least-square sense.
+        '''
+    
     year = arange(1994, 2010)  # from 1994 to 2009
     ppm = array([356.8, 358.2, 360.3, 361.8, 364.0, 365.7, 366.7, 368.2,
                  370.5, 372.2, 374.9, 376.7, 378.7, 381.0, 382.9, 384.7])
 
     ## YOUR CODE HERE
+    
+    x_bar=sum(year)/len(year)
+    y_bar=sum(ppm)/len(ppm)
+    global b
+    b=sum(ppm*(year-x_bar))/sum(year*(year-x_bar))
+    global a
+    a=y_bar-b*x_bar
+    return b
     raise Exception("Not implemented")
 
 
@@ -63,6 +71,9 @@ def extrapolation_3_2_5():
     Hint: Use the result of the previous function.
     '''
     ## YOUR CODE HERE
+    
+    return a+b*2020
+    
     raise Exception("Not implemented")
 
 
@@ -97,12 +108,19 @@ def f_and_df(t):
     Hint: to compute f', use the central approximation
     '''
 
+    global u,M0,mdot,g
     u=2510
     M0=2.8E6
     mdot=13.3E3
     g=9.81
     
     ## YOUR CODE HERE
+
+    v=u*log(M0/(M0-mdot*t))-g*t
+    vder=u*mdot/(M0-mdot*t)-g
+    
+    return v,vder
+    
     raise Exception("Not implemented")
 
 def problem_4_1_19(v1, acc):
@@ -117,6 +135,16 @@ def problem_4_1_19(v1, acc):
     '''
 
     ## YOUR CODE HERE
+
+    t1=0
+    t2=65
+    while abs(t2-t1)>acc:
+        t1=t2
+        f=u*log(M0/(M0-mdot*t1))-g*t1-v1
+        fder=u*mdot/(M0-mdot*t1)-g
+        t2=t1-f/fder
+    return t2
+
     raise Exception("Not implemented")   
 
 '''
@@ -152,6 +180,13 @@ def f_4_1_26(x_data, y_data, x):
     Test: function 'test_f' in 'tests/test_problem_4_1_26.py'
     '''
     ## YOUR CODE HERE
+
+    arr=[]
+    for i in range(len(x_data)):
+        f=(x_data[i]-x[0])**2+(y_data[i]-x[1])**2-x[2]**2
+        arr.append(f)
+    return arr
+
     raise Exception("Not implemented")
 
 def problem_4_1_26(x_data, y_data):
@@ -169,6 +204,18 @@ def problem_4_1_26(x_data, y_data):
           a zero of f_4_1_26.
     '''
     ## YOUR CODE HERE
+    x1,x2,x3=x_data
+    y1,y2,y3=y_data
+    a=0.49
+    f=1
+    while abs(f)>0.001:
+        a+=0.01
+        b=(x1-x2)*(x1+x2-2*a)/(2*y1-2*y2)+(y2+y1)/2
+        R=abs(((x1-a)**2+(y1-b)**2)**0.5)
+        f=(x3-a)**2+(y3-b)**2-R**2
+    return a,b,R
+    
+    
     raise Exception("Not implemented")
 
 '''
@@ -193,6 +240,25 @@ def interpolant_5_1_11():
     Hint: use code from Chapters 2 and 3.
     '''
     ## YOUR CODE HERE
+
+    
+    x_data = array([-2.2, -0.3, 0.8, 1.9])
+    y_data = array([15.180, 10.962, 1.920, -2.040])
+
+    a = y_data.copy()
+    m = x_data.size
+    assert(m == y_data.size)
+    for k in range(1, m): 
+        for i in range(k, m): 
+            a[i] = (a[i]-a[k-1])/(x_data[i]-x_data[k-1])
+    a0,a1,a2,a3=a
+    x0,x1,x2,x3=x_data
+    c0=a0-a1*x0+a2*x0*x1-a3*x0*x1*x2
+    c1=a1-a2*x1+a3*x1*x2-a2*x0+a3*x0*x2+a3*x0*x1
+    c2=a2-a3*x2-a3*x1-a3*x0
+    c3=a3
+    return c0, c1, c2, c3
+     
     raise Exception("Not implemented")
 
 def d_dd_5_1_11(x):
@@ -204,6 +270,12 @@ def d_dd_5_1_11(x):
     Hint: differentiate the interpolant returned by the previous function.
     '''
     ## YOUR CODE HERE
+
+    a0,a1,a2,a3=interpolant_5_1_11()
+    f1=a1+2*a2*x+3*a3*x**2
+    f2=2*a2+3*2*a3*x
+    return f1,f2
+    
     raise Exception("Not implemented")
 
 def error_5_1_11(x):
@@ -217,4 +289,10 @@ def error_5_1_11(x):
           the result to the output of the previous function.
     '''
     ## YOUR CODE HERE
+
+    f1,f2=d_dd_5_1_11(x)
+    e1=-8.56-f1
+    e2=-0.6-f2
+    return e1,e2
+
     raise Exception("Not implemented")
